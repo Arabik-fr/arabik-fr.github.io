@@ -28,60 +28,48 @@
   </div>
 
   <script>
-    const apiUrl = "https://render-7yay.onrender.com/chat";
+  const apiUrl = "https://render-7yay.onrender.com/chat";
 
-    function addMessage(text, type) {
-      const div = document.createElement("div");
-      div.className = `message ${type}`;
-      div.textContent = text;
-      document.getElementById("messages").appendChild(div);
-      document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+  function addMessage(text, type) {
+    const div = document.createElement("div");
+    div.className = `message ${type}`;
+    div.textContent = text;
+    document.getElementById("messages").appendChild(div);
+    document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+  }
+
+  function replaceLastBot(text) {
+    const messages = document.querySelectorAll(".message.bot");
+    if (messages.length > 0) {
+      messages[messages.length - 1].textContent = text;
     }
+  }
 
-    function replaceLastBot(text) {
-      const messages = document.querySelectorAll(".message.bot");
-      if (messages.length > 0) {
-        messages[messages.length - 1].textContent = text;
-      }
+  async function handleSend() {
+    const input = document.getElementById("promptInput");
+    const prompt = input.value.trim();
+    if (!prompt) return;
+    addMessage(prompt, "user");
+    input.value = "";
+    addMessage("⏳", "bot");
+
+    try {
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ prompt })
+      });
+
+      const json = await res.json();
+      const botResp = json.response || "Aucune réponse IA.";
+      replaceLastBot(botResp);
+
+    } catch (err) {
+      replaceLastBot("❌ Erreur lors de l’appel à l’IA.");
     }
-
-    async function handleSend() {
-      const input = document.getElementById("promptInput");
-      const prompt = input.value.trim();
-      if (!prompt) return;
-      addMessage(prompt, "user");
-      input.value = "";
-      addMessage("⏳", "bot");
-
-      try {
-        const res = await fetch(apiUrl, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ inputs: prompt })
-        });
-
-        const json = await res.json();
-
-        // Analyse complète de la réponse
-        if (Array.isArray(json) && json[0]?.generated_text) {
-          replaceLastBot(json[0].generated_text);
-        } else if (json?.generated_text) {
-          replaceLastBot(json.generated_text);
-        } else if (json?.output) {
-          replaceLastBot(json.output);
-        } else if (typeof json === "string") {
-          replaceLastBot(json);
-        } else {
-          replaceLastBot("📦 Réponse brute : " + JSON.stringify(json));
-        }
-
-      } catch (err) {
-        replaceLastBot("❌ Erreur lors de l’appel à l’IA.");
-      }
-    }
-  </script>
+  }
+</script>
 </body>
 </html>
